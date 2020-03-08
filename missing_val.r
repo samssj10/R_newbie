@@ -110,4 +110,20 @@ for(i in cnames)
 head(knnImputation(marketing_train,k=3)) #does not work due to even no of obs
 sum(complete.cases(marketing_train))
 
+##correlation plot (works on numeric variables)
+corrgram(marketing_train[,numeric_index],order = F,upper.panel=panel.pie,text.panel = panel.txt,main = "correlation plot")
+#we will reject those variables which are having high negative or positive correlation with multiple variables
+
+## chi squared test of independence (works on factor variables which are of numeric type ie, should not be string facors)
+factor_index=sapply(marketing_train,is.factor)
+factor_data=marketing_train[,factor_index]
+
+for(i in 1:10)
+{
+  print(names(factor_data[i]))
+  print(chisq.test(table(factor_data$responded,factor_data[,i])))
+}
+
+##dimension reduction
+marketing_train_deleted=subset(marketing_train,select =-c(pdays,emp.var.rate,housing,loan,day_of_week))
 
