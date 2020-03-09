@@ -127,3 +127,20 @@ for(i in 1:10)
 ##dimension reduction
 marketing_train_deleted=subset(marketing_train,select =-c(pdays,emp.var.rate,housing,loan,day_of_week))
 
+##normality check
+qqnorm(marketing_train_deleted$custAge) #plots normal q-q plot
+hist(marketing_train_deleted$campaign) #plots histogram 
+##normalisation
+for(i in cnames)
+{
+  print(i)
+  marketing_train_deleted[,i]=(marketing_train_deleted[,i]-min(marketing_train_deleted[,i]))/(max(marketing_train_deleted[,i])-min(marketing_train_deleted[,i]))
+}
+
+##standardization
+for(i in cnames)
+{
+  print(i)
+  marketing_train_deleted[,i]=(marketing_train_deleted[,i]-mean(marketing_train_deleted[,i]))/sd(marketing_train_deleted[,i])
+}
+
