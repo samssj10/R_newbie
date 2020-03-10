@@ -144,3 +144,22 @@ for(i in cnames)
   marketing_train_deleted[,i]=(marketing_train_deleted[,i]-mean(marketing_train_deleted[,i]))/sd(marketing_train_deleted[,i])
 }
 
+#simple random sampling
+data_sample=marketing_train_deleted[sample(nrow(marketing_train_deleted),4000,replace=F),]
+
+#stratified sampling
+stratas=strata(marketing_train_deleted,'profession',size=c(100,199,10,5),method='srswor')
+stratified_data=getdata(marketing_train_deleted,stratas)
+
+#systematic sampling
+#function to generate random numbers with given N and n
+sys.sample=function(N,n){
+  k=ceiling(N/n)
+  r=sample(1:k,1)
+  sys.samp=seq(r,r + k*(n-1),k)
+}
+lis=sys.sample(7414,400) #lis contains random indexes to be used for sampling
+marketing_train_deleted$index=1:7414
+marketing_train_deleted=marketing_train_deleted[marketing_train_deleted$index %in% lis,]
+
+
