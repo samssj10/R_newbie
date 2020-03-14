@@ -162,4 +162,100 @@ lis=sys.sample(7414,400) #lis contains random indexes to be used for sampling
 marketing_train_deleted$index=1:7414
 marketing_train_deleted=marketing_train_deleted[marketing_train_deleted$index %in% lis,]
 
+##Model Development
+library(DataCombine)
+rmExcept("marketing_train_deleted")
+#divide data into training and test data
+set.seed(1234)  
+train.index=createDataPartition(marketing_train_deleted$responded,p=.80,list=FALSE)
+#gives index values of training data obs ,stratified sampling used in this case
+train=marketing_train_deleted[train.index,]
+test=marketing_train_deleted[-train.index,]
 
+#decision tree for classification
+#develop model on training data
+c50_model=C5.0(responded ~.,train,trials=100,rules=TRUE)
+
+#summary of DT model to view confidence,support for the rules obtained
+summary(c50_model)
+
+#write rules into disk
+write(capture.output(summary(c50_model)),"c50_rules.txt")
+
+#prediction for test cases
+#c50_predictions=predict(c50_model,test[,-17],type="prob")
+c50_predictions=predict(c50_model,test[,-17],type="class")
+
+#decision tree for regression
+rm(list=ls())
+library(rpart)
+library(MASS)
+library(DMwR)
+df=birthwt
+write.csv(df,"bwt.csv",row.names = F)
+
+#divide data into training and test data
+train.index=sample(nrow(df),0.8*nrow(df))
+train=df[train.index,]
+test=df[-train.index,]
+
+#develop model on training data
+c50_reg=rpart(bwt ~.,data=train,method = "anova")
+
+#prediction for test cases
+pred_reg=predict(c50_reg,test[,-10])
+
+##error metrics for classification
+
+cf_mat=table(test$responded,c50_predictions) #develop confusion matrix by using table(actual val,pred val)
+confusionMatrix(cf_mat) #gives summary of different error metrics
+
+#FNR
+#FNR=FN/FN+TP
+#accuracy=90.49 %
+#FNR=69.04 %
+#in this case accuracy and fnr is important.
+
+##error metrics for regression
+mape=function(y,yhat){
+  mean(abs((y-yhat)/y))*100
+}
+mape(test[,10],pred_reg)
+
+#alternate way
+regr.eval(test[,10],pred_reg,stats=c("mae","mape","rmse","mse"))
+
+#in this case mape is important
+
+##random forest classifier model
+rf_model=randomForest(responded ~ .,train,importance=TRUE,ntree=1000)
+
+#extract rules from random forest
+#convert the rf object to an intrees format
+trees_list=RF2List(rf_model)
+ext_rules=extractRules(trees_list,train[,-17])
+
+#visualize some rules
+ext_rules[1:2,]
+
+#make rules more readable
+readable_rules=presentRules(ext_rules,colnames(train))
+readable_rules[1:2,]
+
+#get rule metrics
+rule_metric=getRuleMetric(ext_rules,train[,-17],train$responded)
+rule_metric[1:2,]
+
+#predict test data using rf model
+rf_pred=predict(rf_model,test[,-17])
+
+#evaluate performace of RF classification model
+cfmat_rf=table(test$responded,rf_pred)
+cfmat_rf
+confusionMatrix(cfmat_rf)
+
+#FNR=FN/FN+TP
+
+#accuracy=89.41 % (100 tree), 89.6 % (500 tree) , 89.47 % (1000 tree)
+#FNR=73.21 % (100 tree), 70.23 % (500 tree) , 70.83 % (1000 tree)
+# so random forest works best for 500 trees in this case
